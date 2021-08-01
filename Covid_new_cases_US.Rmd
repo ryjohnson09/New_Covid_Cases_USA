@@ -1,22 +1,30 @@
 ---
-title: "New Cases in USA"
-output: html_document
+title: "New Covid-19 Cases in USA"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
 params:
   PS:
     label: "State or Province:"
-    value: Alabama
+    value: Maryland
     input: select
     choices: [Alabama, Alaska, American Samoa, Arizona, Arkansas, California, Colorado, Connecticut, Delaware, Diamond Princess, District of Columbia, Florida, Georgia, Grand Princess, Guam, Hawaii, Idaho, Illinois, Indiana, Iowa, Kansas, Kentucky, Louisiana, Maine, Maryland, Massachusetts, Michigan, Minnesota, Mississippi, Missouri, Montana, Nebraska, Nevada, New Hampshire, New Jersey, New Mexico, New York, North Carolina, North Dakota, Northern Mariana Islands, Ohio, Oklahoma, Oregon, Pennsylvania, Puerto Rico, Rhode Island, South Carolina, South Dakota, Tennessee, Texas, Utah, Vermont, Virgin Islands, Virginia, Washington, West Virginia, Wisconsin, Wyoming]
 ---
 
-```{r message=FALSE, warning=FALSE}
+```{r environment, message=FALSE, warning=FALSE, echo=FALSE}
 library(tidyverse)
 library(lubridate)
+library(gt)
+library(blastula)
 ```
 
-# Read in US Counts
+This parameterized R Markdown report pulls Covid-19 data from [2019 Novel Coronavirus Visual Dashboard operated by the Johns Hopkins University Center for Systems Science and Engineering](https://github.com/CSSEGISandData/COVID-19) and visualizes the number of new cases per day.
 
-```{r, message=FALSE}
+```{r Read in Data, message=FALSE, echo=FALSE}
 g_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv") %>% 
   pivot_longer(cols = matches("^\\d"), names_to = "Date", values_to = "Cases") %>% 
   mutate(Date = mdy(Date)) %>% 
@@ -30,16 +38,60 @@ g_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/
   filter(Province_State == params$PS)
 ```
 
-# Plot New Counts
+# New cases in `r params$PS` by day
 
-```{r}
+```{r covid_day, echo=FALSE, , fig.align='center'}
 ggplot(g_counts, aes(x = Date, y = new_cases)) +
   geom_line(aes(color = Province_State)) +
   theme_minimal() +
-  labs(y = "Number of New Cases",
-       title = "New Cases of Covid-19 in the United States") +
+  labs(y = "Number of New Cases") +
   theme(
     legend.position = "none"
   )
 ```
+
+# New cases in `r params$PS` by week
+
+```{r covid_week, echo=FALSE}
+g_counts %>% 
+  # Filter for past N weeks
+  filter(Date > today() - weeks(5)) %>% 
+  group_by(Province_State, week_num = isoweek(Date)) %>% 
+  summarise(week_counts = sum(new_cases), .groups = "drop") %>% 
+  # Add week start
+  mutate(week_start = floor_date(today() - weeks(isoweek(today()) - week_num), 
+                                 unit = "week", 
+                                 week_start = getOption("lubridate.week.start", 1))) %>% 
+  # Change week start format
+  mutate(week_start_read = paste0(month(week_start, label = T, abbr = T), " ", day(week_start), ", ", year(week_start))) %>% 
+  # gt
+  select(Province_State, week_start_read, week_counts) %>% 
+  pivot_wider(names_from = week_start_read, values_from = week_counts) %>%
+  gt(rowname_col = "Province_State") %>%
+  # tab_header(
+  #   title = "Number of new Covid Cases by week",
+  #   subtitle = "Grouped by State"
+  # ) %>%
+  tab_footnote(
+    footnote = "Date of week start (Monday)",
+    locations = cells_column_labels(
+      columns = 2:6
+      )
+  ) %>%
+  cols_align(align = "center") %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_column_labels(everything())
+  )
+```
+
+```{r, echo=FALSE}
+attach_connect_email(
+  render_connect_email("email.Rmd"),
+  subject = paste("New Covid Cases in", params$PS)
+)
+```
+
 

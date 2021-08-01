@@ -5,6 +5,7 @@ library(lubridate)
 library(shinyjs)
 library(tidyverse)
 library(ggrepel)
+library(gt)
 
 # Get new cases on startup
 new_cases_data <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv") %>% 
@@ -14,7 +15,8 @@ new_cases_data <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COV
     summarise(state_count = sum(Cases)) %>% 
     mutate(new_cases = state_count - lag(state_count)) %>% 
     # Remove negative new_cases (likely reporting correction)
-    filter(new_cases >= 0)
+    filter(new_cases >= 0) %>% 
+    filter(Date >= today() - months(12))
 
 # Define UI -------------------------------------
 ui <- fluidPage(
@@ -42,7 +44,8 @@ ui <- fluidPage(
 
         # Show Plot
         mainPanel(
-           plotOutput("new_cases_plot")
+           plotOutput("new_cases_plot"),
+           gt_output("gt_table")
         )
     )
 )
@@ -60,7 +63,8 @@ server <- function(input, output) {
             filter(Date >= input$date_range[1] & Date <= input$date_range[2]) %>% 
             filter(Province_State %in% input$states)
     })
-
+    
+    # Plot of new cases
     output$new_cases_plot <- renderPlot({
         
         # Modify for labels
@@ -78,6 +82,44 @@ server <- function(input, output) {
                 legend.position = "none"
             ) +
             geom_label_repel(data = state_label, aes(label = Province_State, color = Province_State))
+    })
+    
+    # Gt table of new cases per week
+    output$gt_table <- render_gt({
+        new_cases_data %>% 
+            # filter for states/provinces
+            filter(Province_State %in% input$states) %>% 
+            # Filter for past N weeks
+            filter(Date > today() - weeks(5)) %>% 
+            group_by(Province_State, week_num = isoweek(Date)) %>% 
+            summarise(week_counts = sum(new_cases), .groups = "drop") %>% 
+            # Add week start
+            mutate(week_start = floor_date(today() - weeks(isoweek(today()) - week_num), 
+                                           unit = "week", 
+                                           week_start = getOption("lubridate.week.start", 1))) %>% 
+            # Change week start format
+            mutate(week_start_read = paste0(month(week_start, label = T, abbr = T), " ", day(week_start), ", ", year(week_start))) %>% 
+            # gt
+            select(Province_State, week_start_read, week_counts) %>% 
+            pivot_wider(names_from = week_start_read, values_from = week_counts) %>%
+            gt(rowname_col = "Province_State") %>%
+            # tab_header(
+            #   title = "Number of new Covid Cases by week",
+            #   subtitle = "Grouped by State"
+            # ) %>%
+            tab_footnote(
+                footnote = "Date of week start (Monday)",
+                locations = cells_column_labels(
+                    columns = 2:6
+                )
+            ) %>%
+            cols_align(align = "center") %>%
+            tab_style(
+                style = list(
+                    cell_text(weight = "bold")
+                ),
+                locations = cells_column_labels(everything())
+            )
     })
 }
 

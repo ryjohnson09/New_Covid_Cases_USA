@@ -1,0 +1,13 @@
+name: covid_new_cases_us
+title: Covid_new_cases_US
+username: ryan
+account: ryan
+server: connect.rstudioservices.com
+hostUrl: https://connect.rstudioservices.com/__api__
+appId: 4818
+bundleId: 109994
+url: https://connect.rstudioservices.com/content/103d20a7-f161-4e48-8e09-6201287323bf/
+when: 1627836495.62572
+lastSyncTime: 1627836495.62573
+asMultiple: FALSE
+asStatic: FALSE

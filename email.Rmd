@@ -1,0 +1,12 @@
+---
+title: "New Covid Cases Report"
+output: blastula::blastula_email
+---
+
+# New Covid Cases in `r params$PS`
+
+```{r covid_day, echo=FALSE}
+```
+
+```{r covid_week, echo=FALSE}
+```
