@@ -5,9 +5,9 @@ account: ryan
 server: connect.rstudioservices.com
 hostUrl: https://connect.rstudioservices.com/__api__
 appId: 4819
-bundleId: 110004
+bundleId: 110291
 url: https://connect.rstudioservices.com/content/621d452b-b2fe-4654-860e-436c4d50c7ef/
-when: 1627839541.80685
-lastSyncTime: 1627839541.80686
+when: 1627915255.32237
+lastSyncTime: 1627915255.32239
 asMultiple: FALSE
 asStatic: FALSE
