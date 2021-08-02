@@ -59,6 +59,10 @@ server <- function(input, output) {
     
     # Filter new cases based on inputs
     new_cases_filt <- reactive({
+        
+        # Require input
+        req(input$states)
+        
         new_cases_data %>% 
             filter(Date >= input$date_range[1] & Date <= input$date_range[2]) %>% 
             filter(Province_State %in% input$states)
@@ -86,6 +90,9 @@ server <- function(input, output) {
     
     # Gt table of new cases per week
     output$gt_table <- render_gt({
+        # Require input
+        req(input$states)
+        
         new_cases_data %>% 
             # filter for states/provinces
             filter(Province_State %in% input$states) %>% 
