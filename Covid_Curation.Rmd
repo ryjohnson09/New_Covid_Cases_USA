@@ -1,16 +1,39 @@
 ---
-title: "USA - Covid-19 New Cases"
 output:
   html_document:
     theme: flatly
 editor_options: 
   chunk_output_type: console
 ---
+`r gitlink::ribbon_css("https://github.com/ryjohnson09/New_Covid_Cases_USA", text="View on GitHub")`
+
+```{css, echo=FALSE}
+.main-container {
+    width: 100%;
+    max-width: unset;
+}
+
+.main {
+    max-width: 940px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.jumbotron {
+  color: white;
+  background-image: url("https://source.unsplash.com/w9KEokhajKw/1920x1080");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 50vh;
+}
+```
 
 ```{r setup, include=FALSE}
 library(dplyr)
 library(connectwidgets)
 library(connectapi)
+library(htmltools)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 # Set up connection
@@ -26,7 +49,16 @@ covid_content <- content(client = client) %>%
   filter(guid %in% guids)
 ```
 
-
+```{r}
+div(
+  class = "jumbotron jumbotron-fluid",
+  div(
+    class = "container",
+    h1("Covid-19", class = "display-4"),
+    p("New Covid-19 Cases in the USA")
+  )
+)
+```
 
 ### New Cases by State/Province (Parameterized Rmd)
 ```{r card1}
