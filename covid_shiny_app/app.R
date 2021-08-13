@@ -6,6 +6,7 @@ library(shinyjs)
 library(tidyverse)
 library(ggrepel)
 library(gt)
+library(zoo)
 
 # Get new cases on startup
 new_cases_data <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv") %>% 
@@ -16,7 +17,10 @@ new_cases_data <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COV
     mutate(new_cases = state_count - lag(state_count)) %>% 
     # Remove negative new_cases (likely reporting correction)
     filter(new_cases >= 0) %>% 
-    filter(Date >= today() - months(12))
+    filter(Date >= today() - months(12)) %>% 
+    # Calculate 7 day rolling average
+    mutate(roll_avg_7 = rollmeanr(new_cases, 7, fill = NA)) %>% 
+    filter(!is.na(roll_avg_7))
 
 # Define UI -------------------------------------
 ui <- fluidPage(
@@ -74,13 +78,13 @@ server <- function(input, output) {
         # Modify for labels
         state_label <- new_cases_filt() %>% 
             group_by(Province_State) %>% 
-            filter(new_cases == max(new_cases)) %>% 
+            filter(roll_avg_7 == max(roll_avg_7)) %>% 
             filter(Date == max(Date))
         
-        ggplot(new_cases_filt(), aes(x = Date, y = new_cases)) +
-            geom_line(aes(color = Province_State)) +
+        ggplot(new_cases_filt(), aes(x = Date, y = roll_avg_7)) +
+            geom_line(aes(color = Province_State), size = 1.3) +
             theme_minimal() +
-            labs(y = "Number of New Cases",
+            labs(y = "Number of New Cases\n7-day average",
                  title = "New Cases of Covid-19 in the United States") +
             theme(
                 legend.position = "none"

@@ -20,6 +20,7 @@ library(tidyverse)
 library(lubridate)
 library(gt)
 library(blastula)
+library(zoo)
 ```
 
 This parameterized R Markdown report pulls Covid-19 data from [2019 Novel Coronavirus Visual Dashboard operated by the Johns Hopkins University Center for Systems Science and Engineering](https://github.com/CSSEGISandData/COVID-19) and visualizes the number of new cases per day.
@@ -34,17 +35,20 @@ g_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/
   # Remove negative new_cases (likely reporting correction)
   filter(new_cases >= 0) %>% 
   filter(Date >= today() - months(12)) %>% 
+  # Calculate 7 day rolling average
+  mutate(roll_avg_7 = rollmeanr(new_cases, 7, fill = NA)) %>% 
+  filter(!is.na(roll_avg_7)) %>% 
   # Filter with parameters
   filter(Province_State == params$PS)
 ```
 
-# New cases in `r params$PS` by day
+# New cases in `r params$PS`
 
 ```{r covid_day, echo=FALSE, , fig.align='center'}
-ggplot(g_counts, aes(x = Date, y = new_cases)) +
+ggplot(g_counts, aes(x = Date, y = roll_avg_7)) +
   geom_line(aes(color = Province_State)) +
   theme_minimal() +
-  labs(y = "Number of New Cases") +
+  labs(y = "Number of New Cases\n7-day rolling avg") +
   theme(
     legend.position = "none"
   )
