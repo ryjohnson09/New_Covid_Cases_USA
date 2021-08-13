@@ -1,0 +1,43 @@
+---
+title: "USA - Covid-19 New Cases"
+output:
+  html_document:
+    theme: flatly
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(connectwidgets)
+library(connectapi)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+# Set up connection
+client <- connectwidgets::connect(
+  server  = Sys.getenv("CONNECT_SERVER"),
+  api_key = Sys.getenv("CONNECT_API_KEY")
+  )
+
+guids <- c("2ba00055-d3ec-4b2e-bb6b-a6f01e361621", #Param Rmd
+           "a5b31034-660e-492f-a97a-005c0e88fee7") #Shiny app
+
+covid_content <- content(client = client) %>% 
+  filter(guid %in% guids)
+```
+
+
+
+### New Cases by State/Province (Parameterized Rmd)
+```{r card1}
+covid_content %>%
+  filter(guid == "2ba00055-d3ec-4b2e-bb6b-a6f01e361621") %>% 
+  rsc_card()
+```
+
+### 7-day rolling average (Shiny App)
+```{r card2}
+covid_content %>%
+  filter(guid == "a5b31034-660e-492f-a97a-005c0e88fee7") %>% 
+  rsc_card()
+```
