@@ -5,9 +5,9 @@ account: ryan
 server: colorado.rstudio.com
 hostUrl: https://colorado.rstudio.com/rsc/__api__
 appId: 9557
-bundleId: 46870
-url: https://colorado.rstudio.com/rsc/content/a5b31034-660e-492f-a97a-005c0e88fee7/
-when: 1627923437.31728
-lastSyncTime: 1627923437.31729
+bundleId: 47189
+url: https://colorado.rstudio.com/rsc/covid/
+when: 1628874367.35091
+lastSyncTime: 1628874367.35092
 asMultiple: FALSE
 asStatic: FALSE

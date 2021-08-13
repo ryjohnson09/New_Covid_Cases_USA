@@ -44,7 +44,7 @@ g_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/
 
 # New cases in `r params$PS`
 
-```{r covid_day, echo=FALSE, , fig.align='center'}
+```{r covid_7day, echo=FALSE, , fig.align='center'}
 ggplot(g_counts, aes(x = Date, y = roll_avg_7)) +
   geom_line(aes(color = Province_State)) +
   theme_minimal() +

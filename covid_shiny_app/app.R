@@ -119,9 +119,9 @@ server <- function(input, output) {
             #   subtitle = "Grouped by State"
             # ) %>%
             tab_footnote(
-                footnote = "Date of week start (Monday)",
+                footnote = "New cases total by week. Date indicates week start (Monday)",
                 locations = cells_column_labels(
-                    columns = 2:6
+                    columns = 2:7
                 )
             ) %>%
             cols_align(align = "center") %>%
