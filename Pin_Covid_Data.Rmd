@@ -1,0 +1,61 @@
+---
+title: "Pin: Covid Data"
+author: "Ryan Johnson"
+date: "8/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(gt)
+library(blastula)
+library(zoo)
+library(pins)
+
+# Register Pin Board
+pins::board_register_rsconnect(server = Sys.getenv("CONNECT_SERVER"),
+                               key = Sys.getenv("CONNECT_API_KEY"))
+```
+
+# Extract Covid Deaths Data
+```{r new_deaths, message=FALSE, echo=FALSE}
+deaths_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv") %>% 
+  pivot_longer(cols = matches("^\\d"), names_to = "Date", values_to = "Deaths") %>% 
+  mutate(Date = mdy(Date)) %>% 
+  group_by(Province_State, Date) %>% 
+  summarise(state_total_deaths = sum(Deaths)) %>% 
+  mutate(new_deaths = state_total_deaths - lag(state_total_deaths)) %>% 
+  # Remove negative new_deaths (likely reporting correction)
+  filter(new_deaths >= 0) %>% 
+  # Calculate 7 day rolling average
+  mutate(deaths_avg_7 = rollmeanr(new_deaths, 7, fill = NA)) %>% 
+  filter(!is.na(deaths_avg_7))
+```
+# Extract Covid Cases Data
+```{r new_cases, message=FALSE, echo=FALSE}
+cases_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv") %>% 
+  pivot_longer(cols = matches("^\\d"), names_to = "Date", values_to = "Cases") %>% 
+  mutate(Date = mdy(Date)) %>% 
+  group_by(Province_State, Date) %>% 
+  summarise(state_total_cases = sum(Cases)) %>% 
+  mutate(new_cases = state_total_cases - lag(state_total_cases)) %>% 
+  # Remove negative new_cases (likely reporting correction)
+  filter(new_cases >= 0) %>% 
+  # Calculate 7 day rolling average
+  mutate(cases_avg_7 = rollmeanr(new_cases, 7, fill = NA)) %>% 
+  filter(!is.na(cases_avg_7))
+```
+# Merge Cases with Death and Pin
+```{r merge_cases_deaths, message=FALSE, echo=FALSE}
+# Merge cases and deaths data
+cases_deaths <- full_join(cases_counts, deaths_counts)
+
+# pin to RStudio Connect
+pins::pin(cases_deaths, 
+          name = "Covid_Data",
+          board = "rsconnect")
+```
+
