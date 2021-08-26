@@ -1,7 +1,7 @@
 ---
 title: "Pin: Covid Data"
 author: "Ryan Johnson"
-date: "8/19/2021"
+date: "8/25/2021"
 output: html_document
 ---
 
@@ -20,7 +20,7 @@ pins::board_register_rsconnect(server = Sys.getenv("CONNECT_SERVER"),
                                key = Sys.getenv("CONNECT_API_KEY"))
 ```
 
-# Extract Covid Deaths Data
+# Extract Covid Deaths Data (by State/Province)
 ```{r new_deaths, message=FALSE, echo=FALSE}
 deaths_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv") %>% 
   pivot_longer(cols = matches("^\\d"), names_to = "Date", values_to = "Deaths") %>% 
@@ -34,7 +34,7 @@ deaths_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
   mutate(deaths_avg_7 = rollmeanr(new_deaths, 7, fill = NA)) %>% 
   filter(!is.na(deaths_avg_7))
 ```
-# Extract Covid Cases Data
+# Extract Covid Cases Data (by State/Province)
 ```{r new_cases, message=FALSE, echo=FALSE}
 cases_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv") %>% 
   pivot_longer(cols = matches("^\\d"), names_to = "Date", values_to = "Cases") %>% 
@@ -57,5 +57,41 @@ cases_deaths <- full_join(cases_counts, deaths_counts)
 pins::pin(cases_deaths, 
           name = "Covid_Data",
           board = "rsconnect")
+```
+
+# Create USA totals Pin
+```{r USA_totals, message=FALSE, echo=FALSE}
+cases_deaths_USAtotals <- cases_deaths %>% 
+  group_by(Date) %>% 
+  summarise(total_new_cases = sum(new_cases, na.rm = TRUE), 
+            total_new_deaths = sum(new_deaths, na.rm = TRUE)) %>% 
+  # Calculate 7 day rolling average
+  mutate(total_cases_avg_7 = rollmeanr(total_new_cases, 7, fill = NA)) %>%
+  mutate(total_deaths_avg_7 = rollmeanr(total_new_deaths, 7, fill = NA)) %>% 
+  filter(!is.na(total_cases_avg_7)) %>% 
+  filter(!is.na(total_deaths_avg_7))
+
+# Pin
+pins::pin(cases_deaths_USAtotals, 
+          name = "USA_totals_cases_deaths",
+          board = "rsconnect")
+```
+
+# Plot USA Totals
+```{r, plots}
+# Plot
+cases_deaths_USAtotals %>% 
+  ggplot(aes(x = Date, y = total_cases_avg_7)) + 
+  geom_line() +
+  labs(title = "USA Covid New Cases: 7-Day Average",
+       y = "New Cases: 7-day average") +
+  theme_minimal()
+
+cases_deaths_USAtotals %>% 
+  ggplot(aes(x = Date, y = total_deaths_avg_7)) + 
+  geom_line() +
+  labs(title = "USA Covid New Deaths: 7-Day Average",
+       y = "New Deaths: 7-day average") +
+  theme_minimal()
 ```
 

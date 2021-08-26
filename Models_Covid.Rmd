@@ -1,0 +1,226 @@
+---
+title: 'Covid: Predictions'
+author: "Ryan Johnson"
+date: "8/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(xgboost)
+library(tidymodels)
+library(modeltime)
+library(tidyverse)
+library(lubridate)
+library(timetk)
+library(pins)
+```
+
+# Overview
+
+This Rmd forecasts 7-day averages for new cases and new deaths due to Covid-19. Most of the modeling was performed using the `modeltime` package and followed the example outlined [here](https://business-science.github.io/modeltime/articles/getting-started-with-modeltime.html).
+
+The models created in this document **have not been rigorously tested/validated** and are meant primarily to show the basic functionality of the `modeltime` package.
+
+# Get Data and Visualize
+
+```{r data, message=FALSE, warning=FALSE}
+# Get data for USA new deaths/caes (7-day averages)
+usa_total <- pin_get("ryan/USA_totals_cases_deaths", board = "rsconnect")
+  
+# Split into Cases and Deaths
+## Only model data from past 2 months
+usa_total_cases <- usa_total %>% 
+  select(Date, total_cases_avg_7) %>% 
+  # Fiter by time
+  filter(Date >= today() - months(2))
+
+usa_total_deaths <- usa_total %>% 
+  select(Date, total_deaths_avg_7) %>% 
+  # Fiter by time
+  filter(Date >= today() - months(2))
+
+
+plot_time_series(usa_total_cases, Date, total_cases_avg_7, .interactive = FALSE, .title = "New Cases (7-day avg")
+plot_time_series(usa_total_deaths, Date, total_deaths_avg_7, .interactive = FALSE, .title = "New Deaths (7-day avg")
+```
+
+# Modeling
+
+## Split Data
+
+```{r}
+# Split Data
+splits_cases <- initial_time_split(usa_total_cases, prop = 0.9)
+splits_deaths <- initial_time_split(usa_total_deaths, prop = 0.9)
+```
+
+## Train Models for New Cases
+
+```{r models-cases}
+# Model 1: arima_boost ----
+model_fit_arima_boosted_c <- arima_boost(min_n = 2,
+                                       learn_rate = 0.015) %>%
+  set_engine(engine = "auto_arima_xgboost") %>%
+  fit(total_cases_avg_7 ~ Date + as.numeric(Date),
+      data = training(splits_cases))
+
+# Model 2: ets ----
+model_fit_ets_c <- exp_smoothing() %>%
+  set_engine(engine = "ets") %>%
+  fit(total_cases_avg_7 ~ Date, data = training(splits_cases))
+
+# Model 3: prophet ----
+model_fit_prophet_c <- prophet_reg() %>%
+  set_engine(engine = "prophet") %>%
+  fit(total_cases_avg_7 ~ Date, data = training(splits_cases))
+
+# Model 4: lm ----
+model_fit_lm_c <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(total_cases_avg_7 ~ as.numeric(Date),
+      data = training(splits_cases))
+
+# Model 5: earth ----
+model_spec_mars_c <- mars(mode = "regression") %>%
+  set_engine("earth")
+
+recipe_spec_c <-
+  recipe(total_cases_avg_7 ~ Date, data = training(splits_cases)) %>%
+  step_mutate(date_num = as.numeric(Date)) %>%
+  step_normalize(date_num) %>%
+  step_rm(Date)
+
+wflw_fit_mars_c <- workflow() %>%
+  add_recipe(recipe_spec_c) %>%
+  add_model(model_spec_mars_c) %>%
+  fit(training(splits_cases))
+```
+
+## Train Models for New Deaths
+
+```{r models-deaths}
+# Model 1: arima_boost ----
+model_fit_arima_boosted_d <- arima_boost(min_n = 2,
+                                       learn_rate = 0.015) %>%
+  set_engine(engine = "auto_arima_xgboost") %>%
+  fit(total_deaths_avg_7 ~ Date + as.numeric(Date),
+      data = training(splits_deaths))
+
+# Model 2: ets ----
+model_fit_ets_d <- exp_smoothing() %>%
+  set_engine(engine = "ets") %>%
+  fit(total_deaths_avg_7 ~ Date, data = training(splits_deaths))
+
+# Model 3: prophet ----
+model_fit_prophet_d <- prophet_reg() %>%
+  set_engine(engine = "prophet") %>%
+  fit(total_deaths_avg_7 ~ Date, data = training(splits_deaths))
+
+# Model 4: lm ----
+model_fit_lm_d <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(total_deaths_avg_7 ~ as.numeric(Date),
+      data = training(splits_deaths))
+
+# Model 5: earth ----
+model_spec_mars_d <- mars(mode = "regression") %>%
+  set_engine("earth")
+
+recipe_spec_d <-
+  recipe(total_deaths_avg_7 ~ Date, data = training(splits_deaths)) %>%
+  step_mutate(date_num = as.numeric(Date)) %>%
+  step_normalize(date_num) %>%
+  step_rm(Date)
+
+wflw_fit_mars_d <- workflow() %>%
+  add_recipe(recipe_spec_d) %>%
+  add_model(model_spec_mars_d) %>%
+  fit(training(splits_deaths))
+```
+
+## Create Model Tables
+
+```{r model-tables}
+# Cases
+models_tbl_c <- modeltime_table(
+    model_fit_arima_boosted_c,
+    model_fit_ets_c,
+    model_fit_prophet_c,
+    model_fit_lm_c,
+    wflw_fit_mars_c
+)
+
+# Deaths
+models_tbl_d <- modeltime_table(
+    model_fit_arima_boosted_d,
+    model_fit_ets_d,
+    model_fit_prophet_d,
+    model_fit_lm_d,
+    wflw_fit_mars_d
+)
+```
+
+## Calibrate on testing data
+
+```{r calibrate}
+# Calibrate cases
+calibration_tbl_c <- models_tbl_c %>%
+    modeltime_calibrate(new_data = testing(splits_cases))
+
+# Calibrate deaths
+calibration_tbl_d <- models_tbl_d %>%
+    modeltime_calibrate(new_data = testing(splits_deaths))
+```
+
+## Refit on entire data set
+
+```{r refit}
+# Cases
+refit_tbl_c <- calibration_tbl_c %>%
+    modeltime_refit(data = usa_total_cases)
+
+# Deaths
+refit_tbl_d <- calibration_tbl_d %>%
+    modeltime_refit(data = usa_total_deaths)
+```
+
+## Pin Models
+```{r}
+# Register Pin Board
+pins::board_register_rsconnect(server = Sys.getenv("CONNECT_SERVER"),
+                               key = Sys.getenv("CONNECT_API_KEY"))
+# Cases
+pin(refit_tbl_c,
+    name = "Covid_model_cases",
+    board = "rsconnect")
+
+# Deaths
+pin(refit_tbl_d,
+    name = "Covid_model_deaths",
+    board = "rsconnect")
+```
+
+
+## Visualize Prediction Models
+
+```{r plot_model, message=FALSE, warning=FALSE}
+# Cases: predict 2 weeks
+refit_tbl_c %>%
+    modeltime_forecast(h = "2 week", actual_data = usa_total_cases) %>%
+    plot_modeltime_forecast(
+      .legend_max_width = 25, # For mobile screens
+      .interactive      = FALSE, 
+      .title = "Forecast: Cases"
+    )
+
+# Deaths: predict 2 weeks
+refit_tbl_d %>%
+    modeltime_forecast(h = "2 week", actual_data = usa_total_deaths) %>%
+    plot_modeltime_forecast(
+      .legend_max_width = 25, # For mobile screens
+      .interactive      = FALSE,
+      .title = "Forecast: Deaths"
+    )
+```
