@@ -5,6 +5,7 @@ output:
 editor_options: 
   chunk_output_type: console
 ---
+
 `r gitlink::ribbon_css("https://github.com/ryjohnson09/New_Covid_Cases_USA", text="View on GitHub")`
 
 ```{css, echo=FALSE}
@@ -42,8 +43,15 @@ client <- connectwidgets::connect(
   api_key = Sys.getenv("CONNECT_API_KEY")
   )
 
-guids <- c("2ba00055-d3ec-4b2e-bb6b-a6f01e361621", #Param Rmd
-           "a5b31034-660e-492f-a97a-005c0e88fee7") #Shiny app
+guids <- c("3776b35d-012b-46b3-8641-c4ec4f2f795d", # ETL Rmd
+           "54b348bd-12c4-4791-9745-cb02ae5760f8", # Model Rmd
+           "31208e7f-f1d2-4872-8808-ff5e9a535ea4", # Pin: USA totals
+           "18ed50cf-82bd-4cee-9c6c-3e2983d18cb6", # Pin: State/Prov totals
+           "cf4318f4-7467-4cd1-ac21-d7d6b9b8a8c6", # Pin: Model (Cases)
+           "deba2bf8-0014-4181-918b-2e2d1f842083", # Pin: Model (Deaths)
+           "1bc446ed-3343-482f-b8d5-39437e0033a9", # API: Predict Cases
+           "1eb4c0b7-faa2-4780-a7cc-dbf787564854", # API: Predict Deaths
+           "561f7f69-d30a-47e0-8721-c1833c8b6237") # Dashboard
 
 covid_content <- content(client = client) %>% 
   filter(guid %in% guids)
@@ -60,16 +68,51 @@ div(
 )
 ```
 
-### New Cases by State/Province (Parameterized Rmd)
-```{r card1}
-covid_content %>%
-  filter(guid == "2ba00055-d3ec-4b2e-bb6b-a6f01e361621") %>% 
+## Apps
+
+```{r}
+covid_content %>% 
+  filter(guid == "561f7f69-d30a-47e0-8721-c1833c8b6237") %>% 
   rsc_card()
 ```
 
-### 7-day rolling average (Shiny App)
-```{r card2}
+## Scheduled Jobs {.tabset}
+
+Each scheduled job performs a task (ETL or model creation) and [Pins](https://pins.rstudio.com/) to RStudio Connect.
+
+### ETL
+
+```{r}
 covid_content %>%
-  filter(guid == "a5b31034-660e-492f-a97a-005c0e88fee7") %>% 
+  filter(guid == "3776b35d-012b-46b3-8641-c4ec4f2f795d") %>% 
+  rsc_grid()
+```
+
+### Modeling
+
+```{r}
+covid_content %>%
+  filter(guid == "54b348bd-12c4-4791-9745-cb02ae5760f8") %>% 
+  rsc_grid()
+```
+
+
+## Pins
+
+```{r}
+covid_content %>% 
+  filter(guid %in% c("31208e7f-f1d2-4872-8808-ff5e9a535ea4",
+                     "18ed50cf-82bd-4cee-9c6c-3e2983d18cb6",
+                     "cf4318f4-7467-4cd1-ac21-d7d6b9b8a8c6",
+                     "deba2bf8-0014-4181-918b-2e2d1f842083")) %>% 
+  rsc_table()
+```
+
+## APIs
+
+```{r}
+covid_content %>% 
+  filter(guid %in% c("1bc446ed-3343-482f-b8d5-39437e0033a9",
+                     "1eb4c0b7-faa2-4780-a7cc-dbf787564854")) %>% 
   rsc_card()
 ```

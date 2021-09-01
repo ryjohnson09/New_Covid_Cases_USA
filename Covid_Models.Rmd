@@ -15,6 +15,7 @@ library(tidyverse)
 library(lubridate)
 library(timetk)
 library(pins)
+library(earth)
 ```
 
 # Overview

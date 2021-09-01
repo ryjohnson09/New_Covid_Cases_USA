@@ -1,0 +1,13 @@
+name: usa_covid_dashboard
+title: USA_Covid_Dashboard
+username: ryan
+account: ryan
+server: colorado.rstudio.com
+hostUrl: https://colorado.rstudio.com/rsc/__api__
+appId: 9732
+bundleId: 47686
+url: https://colorado.rstudio.com/rsc/content/561f7f69-d30a-47e0-8721-c1833c8b6237/
+when: 1630496559.62093
+lastSyncTime: 1630496559.62094
+asMultiple: FALSE
+asStatic: FALSE

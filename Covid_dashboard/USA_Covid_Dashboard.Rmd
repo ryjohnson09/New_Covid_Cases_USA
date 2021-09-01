@@ -48,7 +48,7 @@ selectizeInput(
 ```
 
 
-This sidebar will just contain metatdata about what this dashboard does
+Covid-19 data obtained from the [Johns Hopkins University Center for Systems Science and Engineering](https://github.com/CSSEGISandData/COVID-19) and visualizes the **7 day rolling average** of new cases and deaths per day in the United States.
 
 Row {.tabset}
 -----------------------------------------------------------------------
