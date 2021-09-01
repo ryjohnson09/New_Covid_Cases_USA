@@ -1,6 +1,7 @@
 library(plumber)
 library(pins)
 library(modeltime)
+library(tidyverse)
 
 # Red in data ------------------------------------
 usa_total_deaths <- pin_get("ryan/USA_totals_cases_deaths", board = "rsconnect") %>% 
@@ -16,7 +17,7 @@ deaths_model_1 <- structure(deaths_model, class = c("mdl_time_tbl", "tbl_df", "t
 
 #* Predict new 7-day average
 #* @param pred_time Length of time to make predictions
-#* @get /echo
+#* @get /pred
 function(pred_time) {
   modeltime_forecast(deaths_model_1, h = pred_time,  actual_data = usa_total_deaths)
 }

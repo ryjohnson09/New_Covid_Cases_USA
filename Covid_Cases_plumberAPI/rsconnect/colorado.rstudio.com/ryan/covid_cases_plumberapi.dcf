@@ -1,0 +1,13 @@
+name: covid_cases_plumberapi
+title: Covid_Cases_plumberAPI
+username: ryan
+account: ryan
+server: colorado.rstudio.com
+hostUrl: https://colorado.rstudio.com/rsc/__api__
+appId: 9704
+bundleId: 47546
+url: https://colorado.rstudio.com/rsc/content/1bc446ed-3343-482f-b8d5-39437e0033a9/
+when: 1630087583.88941
+lastSyncTime: 1630087583.88942
+asMultiple: FALSE
+asStatic: FALSE

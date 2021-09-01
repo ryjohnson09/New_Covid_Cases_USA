@@ -1,6 +1,7 @@
 library(plumber)
 library(pins)
 library(modeltime)
+library(tidyverse)
 
 # Red in data ------------------------------------
 usa_total_cases <- pin_get("ryan/USA_totals_cases_deaths", board = "rsconnect") %>% 
@@ -16,9 +17,7 @@ cases_model_1 <- structure(cases_model, class = c("mdl_time_tbl", "tbl_df", "tbl
 
 #* Predict new 7-day average
 #* @param pred_time Length of time to make predictions
-#* @get /echo
+#* @get /pred
 function(pred_time) {
-  modeltime_forecast(cases_model1, h = pred_time,  actual_data = usa_total_cases)
+  modeltime_forecast(cases_model_1, h = pred_time,  actual_data = usa_total_cases)
 }
-
-

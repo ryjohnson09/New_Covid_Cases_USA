@@ -7,20 +7,18 @@ library(tidyverse)
 library(ggrepel)
 library(gt)
 library(zoo)
+library(pins)
+library(plotly)
+library(modeltime)
 
-# Get new cases on startup
-new_cases_data <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv") %>% 
-    pivot_longer(cols = matches("^\\d"), names_to = "Date", values_to = "Cases") %>% 
-    mutate(Date = mdy(Date)) %>% 
-    group_by(Province_State, Date) %>% 
-    summarise(state_count = sum(Cases)) %>% 
-    mutate(new_cases = state_count - lag(state_count)) %>% 
-    # Remove negative new_cases (likely reporting correction)
-    filter(new_cases >= 0) %>% 
-    filter(Date >= today() - months(12)) %>% 
-    # Calculate 7 day rolling average
-    mutate(roll_avg_7 = rollmeanr(new_cases, 7, fill = NA)) %>% 
-    filter(!is.na(roll_avg_7))
+# Read in Data from Pins ------------------------
+# Register Board
+board_register("rsconnect", server = "https://colorado.rstudio.com/rsc")
+# USA totals
+usa_cases_deaths <- pin_get("ryan/USA_totals_cases_deaths", board = "rsconnect") 
+# State/Province totals
+sp_cases_deaths  <- pin_get("ryan/StateProvince_totals_cases_deaths", board = "rsconnect")
+
 
 # Define UI -------------------------------------
 ui <- fluidPage(
@@ -34,22 +32,23 @@ ui <- fluidPage(
         sidebarPanel(
             dateRangeInput("date_range",
                         "Date Range:",
-                        start = "2020-01-01",
-                        end = today()
+                        start = min(sp_cases_deaths$Date),
+                        end = max(sp_cases_deaths$Date)
                         ),
             selectizeInput("states",
                            "State/Province",
-                           choices = unique(new_cases_data$Province_State),
+                           choices = unique(sp_cases_deaths$Province_State),
                            multiple = TRUE,
-                           options = list(placeholder = 'Select State/Province')
+                           options = list(placeholder = 'Select State/Province'), 
+                           selected = "Maryland"
             ),
             actionButton("resetStates", "Reset")
         ),
 
         # Show Plot
         mainPanel(
-           plotOutput("new_cases_plot"),
-           gt_output("gt_table")
+           plotlyOutput("sp_cases_deaths_plot"),
+           plotlyOutput("USA_cases_deaths_plot")
         )
     )
 )
@@ -67,72 +66,58 @@ server <- function(input, output) {
         # Require input
         req(input$states)
         
-        new_cases_data %>% 
-            filter(Date >= input$date_range[1] & Date <= input$date_range[2]) %>% 
+        sp_cases_deaths %>% 
+            # filter(Date >= input$date_range[1] & Date <= input$date_range[2]) %>% 
             filter(Province_State %in% input$states)
     })
     
-    # Plot of new cases
-    output$new_cases_plot <- renderPlot({
+    # Plot of new cases/deaths by state/province
+    output$sp_cases_deaths_plot <- renderPlotly({
         
         # Modify for labels
         state_label <- new_cases_filt() %>% 
             group_by(Province_State) %>% 
-            filter(roll_avg_7 == max(roll_avg_7)) %>% 
+            filter(cases_avg_7 == max(cases_avg_7, na.rm = TRUE)) %>% 
             filter(Date == max(Date))
         
-        ggplot(new_cases_filt(), aes(x = Date, y = roll_avg_7)) +
-            geom_line(aes(color = Province_State), size = 1.3) +
+        ggplotly(ggplot(new_cases_filt(), aes(x = Date, y = cases_avg_7)) +
+            geom_blank() +
+            geom_line(aes(color = Province_State), size = 1) +
             theme_minimal() +
             labs(y = "Number of New Cases\n7-day average",
-                 title = "New Cases of Covid-19 in the United States") +
+                 title = "New Cases of Covid-19 by State/Province") +
             theme(
                 legend.position = "none"
-            ) +
-            geom_label_repel(data = state_label, aes(label = Province_State, color = Province_State))
+            ))
+            #geom_label_repel(data = state_label, aes(label = Province_State, color = Province_State))
+        
     })
     
-    # Gt table of new cases per week
-    output$gt_table <- render_gt({
-        # Require input
-        req(input$states)
+    # USA New Cases and Deaths Plot
+    output$USA_cases_deaths_plot <- renderPlotly({
         
-        new_cases_data %>% 
-            # filter for states/provinces
-            filter(Province_State %in% input$states) %>% 
-            # Filter for past N weeks
-            filter(Date > today() - weeks(5)) %>% 
-            group_by(Province_State, week_num = isoweek(Date)) %>% 
-            summarise(week_counts = sum(new_cases), .groups = "drop") %>% 
-            # Add week start
-            mutate(week_start = floor_date(today() - weeks(isoweek(today()) - week_num), 
-                                           unit = "week", 
-                                           week_start = getOption("lubridate.week.start", 1))) %>% 
-            # Change week start format
-            mutate(week_start_read = paste0(month(week_start, label = T, abbr = T), " ", day(week_start), ", ", year(week_start))) %>% 
-            # gt
-            select(Province_State, week_start_read, week_counts) %>% 
-            pivot_wider(names_from = week_start_read, values_from = week_counts) %>%
-            gt(rowname_col = "Province_State") %>%
-            # tab_header(
-            #   title = "Number of new Covid Cases by week",
-            #   subtitle = "Grouped by State"
-            # ) %>%
-            tab_footnote(
-                footnote = "New cases total by week. Date indicates week start (Monday)",
-                locations = cells_column_labels(
-                    columns = 2:6
-                )
+        # API call (deaths)
+        death_pred <-
+            httr::GET(
+                "https://colorado.rstudio.com/rsc/covid_deaths_pred/pred",
+                query = list(pred_time = "3 weeks")
             ) %>%
-            cols_align(align = "center") %>%
-            tab_style(
-                style = list(
-                    cell_text(weight = "bold")
-                ),
-                locations = cells_column_labels(everything())
-            )
+            httr::content() %>%
+            map_df(as_tibble) %>% 
+            mutate(.key = factor(.key)) %>% 
+            mutate(.index = as.Date(.index))
+        
+        # Plot using modeltime package
+        plot_modeltime_forecast(death_pred,
+                                .legend_max_width = 25, # For mobile screens
+                                .interactive      = TRUE, 
+                                .title = "Forecast: New Covid Deaths",
+                                .plotly_slider = TRUE,
+                                .y_lab = "New Deaths: 7-Day Average"
+        )
     })
 }
+    
 
 # Run the application 
 shinyApp(ui = ui, server = server)

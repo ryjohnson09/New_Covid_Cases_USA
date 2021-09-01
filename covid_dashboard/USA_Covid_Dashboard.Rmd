@@ -1,0 +1,178 @@
+---
+title: "USA: New Covid Cases and Deaths"
+author: "Ryan Johnson"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(shinyWidgets)
+library(pins)
+library(plotly)
+library(modeltime)
+library(tidymodels)
+
+# Read in Data from Pins ------------------------
+# Register Board
+board_register("rsconnect", server = "https://colorado.rstudio.com/rsc")
+# USA totals
+usa_cases_deaths <- pin_get("ryan/USA_totals_cases_deaths", board = "rsconnect") 
+# State/Province totals
+sp_cases_deaths  <- pin_get("ryan/StateProvince_totals_cases_deaths", board = "rsconnect")
+```
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+dateRangeInput(
+  "date_range",
+  "Date Range:",
+  start = min(sp_cases_deaths$Date),
+  end = max(sp_cases_deaths$Date)
+)
+selectizeInput(
+  "states",
+  "State/Province",
+  choices = unique(sp_cases_deaths$Province_State),
+  multiple = TRUE,
+  options = list(placeholder = 'Select State/Province'),
+  selected = "Maryland"
+)
+```
+
+
+This sidebar will just contain metatdata about what this dashboard does
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+```{r reactives}
+# Filter new cases based on inputs
+new_cases_deaths_filt <- reactive({
+  # Require input
+  req(input$states)
+  
+  sp_cases_deaths %>%
+    filter(Date >= input$date_range[1] & Date <= input$date_range[2]) %>%
+    filter(Province_State %in% input$states)
+})
+```
+
+<b><font size="4em" color="#000000">State\/Province Totals</font></b>
+
+### New Cases
+
+```{r}
+renderPlotly({
+        
+        # Modify for labels
+        state_label <- new_cases_deaths_filt() %>% 
+            group_by(Province_State) %>% 
+            filter(cases_avg_7 == max(cases_avg_7, na.rm = TRUE)) %>% 
+            filter(Date == max(Date))
+        
+        ggplotly(ggplot(new_cases_deaths_filt(), aes(x = Date, y = cases_avg_7)) +
+            geom_blank() +
+            geom_line(aes(color = Province_State), size = 1) +
+            theme_minimal() +
+            labs(y = "Number of New Cases\n7-day average",
+                 title = "New Cases of Covid-19 by State/Province") +
+            theme(
+                legend.position = "none"
+            ))
+            #geom_label_repel(data = state_label, aes(label = Province_State, color = Province_State))
+    })
+```
+
+### New Deaths
+
+```{r}
+renderPlotly({
+        
+        # Modify for labels
+        state_label <- new_cases_deaths_filt() %>% 
+            group_by(Province_State) %>% 
+            filter(deaths_avg_7 == max(cases_avg_7, na.rm = TRUE)) %>% 
+            filter(Date == max(Date))
+        
+        ggplotly(ggplot(new_cases_deaths_filt(), aes(x = Date, y = deaths_avg_7)) +
+            geom_blank() +
+            geom_line(aes(color = Province_State), size = 1) +
+            theme_minimal() +
+            labs(y = "Number of New Deaths\n7-day average",
+                 title = "New Deaths of Covid-19 by State/Province") +
+            theme(
+                legend.position = "none"
+            ))
+            #geom_label_repel(data = state_label, aes(label = Province_State, color = Province_State))
+    })
+```
+
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+<b><font size="4em" color="#000000">USA Totals</font></b>
+
+3-week forecasts made via the `modeltime` R package.
+
+### New Cases
+
+```{r}
+renderPlotly({
+        
+        # API call (deaths)
+        cases_pred <-
+            httr::GET(
+                "https://colorado.rstudio.com/rsc/covid_cases_pred/pred",
+                query = list(pred_time = "3 weeks")
+            ) %>%
+            httr::content() %>%
+            map_df(as_tibble) %>% 
+            mutate(.key = factor(.key)) %>% 
+            mutate(.index = as.Date(.index))
+        
+        # Plot using modeltime package
+        plot_modeltime_forecast(cases_pred,
+                                .legend_max_width = 25, # For mobile screens
+                                .interactive      = TRUE, 
+                                .title = "Forecast: New Covid Cases",
+                                .plotly_slider = TRUE,
+                                .y_lab = "New Cases: 7-Day Average"
+        )
+    })
+```
+
+### New Deaths
+
+```{r}
+renderPlotly({
+        
+        # API call (deaths)
+        death_pred <-
+            httr::GET(
+                "https://colorado.rstudio.com/rsc/covid_deaths_pred/pred",
+                query = list(pred_time = "3 weeks")
+            ) %>%
+            httr::content() %>%
+            map_df(as_tibble) %>% 
+            mutate(.key = factor(.key)) %>% 
+            mutate(.index = as.Date(.index))
+        
+        # Plot using modeltime package
+        plot_modeltime_forecast(death_pred,
+                                .legend_max_width = 25, # For mobile screens
+                                .interactive      = TRUE, 
+                                .title = "Forecast: New Covid Deaths",
+                                .plotly_slider = TRUE,
+                                .y_lab = "New Deaths: 7-Day Average"
+        )
+    })
+```

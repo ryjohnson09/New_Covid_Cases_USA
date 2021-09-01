@@ -21,7 +21,7 @@ pins::board_register_rsconnect(server = Sys.getenv("CONNECT_SERVER"),
 ```
 
 # Extract Covid Deaths Data (by State/Province)
-```{r new_deaths, message=FALSE, echo=FALSE}
+```{r new_deaths, message=FALSE}
 deaths_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv") %>% 
   pivot_longer(cols = matches("^\\d"), names_to = "Date", values_to = "Deaths") %>% 
   mutate(Date = mdy(Date)) %>% 
@@ -35,7 +35,7 @@ deaths_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
   filter(!is.na(deaths_avg_7))
 ```
 # Extract Covid Cases Data (by State/Province)
-```{r new_cases, message=FALSE, echo=FALSE}
+```{r new_cases, message=FALSE}
 cases_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv") %>% 
   pivot_longer(cols = matches("^\\d"), names_to = "Date", values_to = "Cases") %>% 
   mutate(Date = mdy(Date)) %>% 
@@ -49,18 +49,18 @@ cases_counts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID
   filter(!is.na(cases_avg_7))
 ```
 # Merge Cases with Death and Pin
-```{r merge_cases_deaths, message=FALSE, echo=FALSE}
+```{r merge_cases_deaths, message=FALSE}
 # Merge cases and deaths data
 cases_deaths <- full_join(cases_counts, deaths_counts)
 
 # pin to RStudio Connect
 pins::pin(cases_deaths, 
-          name = "Covid_Data",
+          name = "StateProvince_totals_cases_deaths",
           board = "rsconnect")
 ```
 
 # Create USA totals Pin
-```{r USA_totals, message=FALSE, echo=FALSE}
+```{r USA_totals, message=FALSE}
 cases_deaths_USAtotals <- cases_deaths %>% 
   group_by(Date) %>% 
   summarise(total_new_cases = sum(new_cases, na.rm = TRUE), 

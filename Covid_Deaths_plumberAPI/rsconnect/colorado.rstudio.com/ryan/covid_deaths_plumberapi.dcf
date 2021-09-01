@@ -1,0 +1,13 @@
+name: covid_deaths_plumberapi
+title: Covid_Deaths_plumberAPI
+username: ryan
+account: ryan
+server: colorado.rstudio.com
+hostUrl: https://colorado.rstudio.com/rsc/__api__
+appId: 9705
+bundleId: 47547
+url: https://colorado.rstudio.com/rsc/covid_deaths_pred/
+when: 1630087648.61442
+lastSyncTime: 1630087648.61443
+asMultiple: FALSE
+asStatic: FALSE

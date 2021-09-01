@@ -1,0 +1,13 @@
+name: pin_covid_data
+title: Pin_Covid_Data
+username: ryan
+account: ryan
+server: colorado.rstudio.com
+hostUrl: https://colorado.rstudio.com/rsc/__api__
+appId: 9697
+bundleId: 47521
+url: https://colorado.rstudio.com/rsc/content/3776b35d-012b-46b3-8641-c4ec4f2f795d/
+when: 1630007860.21815
+lastSyncTime: 1630007860.21817
+asMultiple: FALSE
+asStatic: FALSE
