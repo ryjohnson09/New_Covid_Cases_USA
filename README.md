@@ -5,3 +5,9 @@ This flexdashboard will show the number of new cases and deaths (7-day rolling a
 * Data pulled from [COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University](https://github.com/CSSEGISandData/COVID-19)
 
 ![](img/dashboard_screenshot.png)
+
+# RStudio Connect
+
+The entire workflow is diagrammed below and completely hosted on RStudio Connect.
+
+![](img/Covid19.jpeg)

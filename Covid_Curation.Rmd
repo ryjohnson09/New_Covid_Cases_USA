@@ -71,6 +71,8 @@ div(
 )
 ```
 
+![](img/Covid19.jpeg)
+
 ## Apps
 
 ```{r}
