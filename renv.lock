@@ -30,6 +30,13 @@
       "Repository": "RSPM",
       "Hash": "b7b812ae4484d4bbf0a0baac72e8fc01"
     },
+    "Formula": {
+      "Package": "Formula",
+      "Version": "1.2-4",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "cc8c8c4d61346cde1ca60030ff9c241f"
+    },
     "GPfit": {
       "Package": "GPfit",
       "Version": "1.0-8",
@@ -120,6 +127,13 @@
       "Source": "Repository",
       "Repository": "RSPM",
       "Hash": "7e2c62de2799dc212e5b52526c288e72"
+    },
+    "TeachingDemos": {
+      "Package": "TeachingDemos",
+      "Version": "2.12",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "41e566d7eab7307a31b3dee3b203c7e0"
     },
     "V8": {
       "Package": "V8",
@@ -401,6 +415,13 @@
       "Source": "Repository",
       "Repository": "RSPM",
       "Hash": "716869fffc16e282c118f8894e082a7d"
+    },
+    "earth": {
+      "Package": "earth",
+      "Version": "5.3.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "fccdc89d741234c23abeaa20f33c5c1e"
     },
     "ellipsis": {
       "Package": "ellipsis",
@@ -989,6 +1010,20 @@
       "Source": "Repository",
       "Repository": "RSPM",
       "Hash": "af4b92cb3828aa30002e2f945c49c2d7"
+    },
+    "plotmo": {
+      "Package": "plotmo",
+      "Version": "3.6.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "81eed015ea891da0a3d8f42bb86ff820"
+    },
+    "plotrix": {
+      "Package": "plotrix",
+      "Version": "3.8-1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "cd2248636c86e6716cd7ae086536cecc"
     },
     "plumber": {
       "Package": "plumber",
