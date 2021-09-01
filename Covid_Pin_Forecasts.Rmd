@@ -1,0 +1,53 @@
+---
+title: "Covid_Pin_Forecasts"
+author: "Ryan Johnson"
+date: "9/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(httr)
+library(tidyverse)
+library(pins)
+
+# Register Board
+board_register("rsconnect", server = "https://colorado.rstudio.com/rsc")
+```
+
+# Predict Cases
+
+## 3 weeks
+
+```{r}
+cases_pred_3weeks <- httr::GET(
+  "https://colorado.rstudio.com/rsc/covid_cases_pred/pred",
+  query = list(pred_time = "3 weeks")) %>%
+  httr::content() %>%
+  map_df(as_tibble) %>%
+  mutate(.key = factor(.key)) %>%
+  mutate(.index = as.Date(.index))
+
+pin(cases_pred_3weeks,
+    name = "Pred_3week_Cases",
+    board = "rsconnect")
+```
+
+# Predict Deaths
+
+## 3 weeks
+
+```{r}
+deaths_pred_3weeks <- httr::GET(
+  "https://colorado.rstudio.com/rsc/covid_deaths_pred/pred",
+  query = list(pred_time = "3 weeks")) %>%
+  httr::content() %>%
+  map_df(as_tibble) %>%
+  mutate(.key = factor(.key)) %>%
+  mutate(.index = as.Date(.index))
+
+pin(deaths_pred_3weeks,
+    name = "Pred_3week_Deaths",
+    board = "rsconnect")
+```

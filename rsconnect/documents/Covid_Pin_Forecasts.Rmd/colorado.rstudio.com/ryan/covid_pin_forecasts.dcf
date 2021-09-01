@@ -1,0 +1,13 @@
+name: covid_pin_forecasts
+title: Covid_Pin_Forecasts
+username: ryan
+account: ryan
+server: colorado.rstudio.com
+hostUrl: https://colorado.rstudio.com/rsc/__api__
+appId: 9740
+bundleId: 47706
+url: https://colorado.rstudio.com/rsc/content/fcc9bf7e-cef9-456e-85b2-84146943345d/
+when: 1630503798.67251
+lastSyncTime: 1630503798.67252
+asMultiple: FALSE
+asStatic: FALSE

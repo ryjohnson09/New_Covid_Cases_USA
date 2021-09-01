@@ -50,6 +50,7 @@ selectizeInput(
 
 Covid-19 data obtained from the [Johns Hopkins University Center for Systems Science and Engineering](https://github.com/CSSEGISandData/COVID-19) and visualizes the **7 day rolling average** of new cases and deaths per day in the United States.
 
+
 Row {.tabset}
 -----------------------------------------------------------------------
 
@@ -128,25 +129,19 @@ Row {.tabset}
 ```{r}
 renderPlotly({
         
-        # API call (deaths)
-        cases_pred <-
-            httr::GET(
-                "https://colorado.rstudio.com/rsc/covid_cases_pred/pred",
-                query = list(pred_time = "3 weeks")
-            ) %>%
-            httr::content() %>%
-            map_df(as_tibble) %>% 
-            mutate(.key = factor(.key)) %>% 
-            mutate(.index = as.Date(.index))
-        
-        # Plot using modeltime package
-        plot_modeltime_forecast(cases_pred,
-                                .legend_max_width = 25, # For mobile screens
-                                .interactive      = TRUE, 
-                                .title = "Forecast: New Covid Cases",
-                                .plotly_slider = TRUE,
-                                .y_lab = "New Cases: 7-Day Average"
-        )
+  # Cases pred pin
+  cases_pred <- pin_get("ryan/Pred_3week_Cases", board = "rsconnect")
+  
+  # Plot using modeltime package
+  plot_modeltime_forecast(
+    cases_pred,
+    .legend_max_width = 25,
+    # For mobile screens
+    .interactive      = TRUE,
+    .title = "Forecast: New Covid Cases",
+    .plotly_slider = TRUE,
+    .y_lab = "New Cases: 7-Day Average"
+  )
     })
 ```
 
@@ -155,24 +150,18 @@ renderPlotly({
 ```{r}
 renderPlotly({
         
-        # API call (deaths)
-        death_pred <-
-            httr::GET(
-                "https://colorado.rstudio.com/rsc/covid_deaths_pred/pred",
-                query = list(pred_time = "3 weeks")
-            ) %>%
-            httr::content() %>%
-            map_df(as_tibble) %>% 
-            mutate(.key = factor(.key)) %>% 
-            mutate(.index = as.Date(.index))
-        
-        # Plot using modeltime package
-        plot_modeltime_forecast(death_pred,
-                                .legend_max_width = 25, # For mobile screens
-                                .interactive      = TRUE, 
-                                .title = "Forecast: New Covid Deaths",
-                                .plotly_slider = TRUE,
-                                .y_lab = "New Deaths: 7-Day Average"
-        )
+  # Deaths pred pin
+  death_pred <- pin_get("ryan/Pred_3week_Deaths", board = "rsconnect")
+  
+  # Plot using modeltime package
+  plot_modeltime_forecast(
+    death_pred,
+    .legend_max_width = 25,
+    # For mobile screens
+    .interactive      = TRUE,
+    .title = "Forecast: New Covid Deaths",
+    .plotly_slider = TRUE,
+    .y_lab = "New Deaths: 7-Day Average"
+  )
     })
 ```
